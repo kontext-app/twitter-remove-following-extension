@@ -2,7 +2,14 @@
   "manifest_version": 3,
   "name": "Twitter Follower Remover",
   "version": "1.0",
-  "permissions": ["activeTab", "scripting"],
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "tabs"
+  ],
+  "host_permissions": [
+    "*://*.twitter.com/*"
+  ],
   "background": {
     "service_worker": "background.js"
   },

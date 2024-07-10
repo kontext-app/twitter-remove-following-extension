@@ -19,7 +19,9 @@ async function waitForMenuItem(text, timeout = 5000) {
     const startTime = Date.now();
     const interval = setInterval(() => {
       const elements = document.querySelectorAll('div[role="menuitem"]');
-      const element = Array.from(elements).find(el => el.textContent.includes(text));
+      console.log("Found menu items:", elements.length); // Logs number of items found
+
+      const element = Array.from(elements).find(el => el.textContent.trim().includes(text));
       if (element) {
         clearInterval(interval);
         resolve(element);
@@ -31,16 +33,61 @@ async function waitForMenuItem(text, timeout = 5000) {
   });
 }
 
+// async function waitForMenuItem(text, timeout = 5000) {
+//   return new Promise((resolve, reject) => {
+//     const startTime = Date.now();
+//     const interval = setInterval(() => {
+//       const elements = document.querySelectorAll('div[role="menuitem"]');
+//       const element = Array.from(elements).find(el => el.textContent.includes(text));
+//       if (element) {
+//         clearInterval(interval);
+//         resolve(element);
+//       } else if (Date.now() - startTime > timeout) {
+//         clearInterval(interval);
+//         reject(new Error(`Menu item with text "${text}" not found within ${timeout}ms`));
+//       }
+//     }, 100);
+//   });
+// }
+
+// Listen for messages from the background script
+if (typeof listenerAdded === 'undefined' || !listenerAdded) {
+  listenerAdded = true;
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === 'removeFollower') {
+      removeFollower();
+    }
+  });
+}
+
+if (typeof moreButtonClicked === 'undefined') {
+  var moreButtonClicked = false;
+}
+if (typeof removeFollowerButtonClicked === 'undefined') {
+  var removeFollowerButtonClicked = false;
+}
+if (typeof confirmButtonClicked === 'undefined') {
+  var confirmButtonClicked = false;
+}
 
 async function removeFollower() {
   try {
     // Click the "More" button
-    const moreButton = await waitForElement('button[aria-label="More"][role="button"]');
-    moreButton.click();
-    console.log('Clicked More button');
+    console.log("Attempting to click 'More' button");
+
+    if (!moreButtonClicked) {
+      // const moreButton = await waitForElement('button[aria-label="More"][role="button"]');
+      // const moreButton = await waitForElement('button[data-testid="userActions"]');
+      const moreButton = await waitForElement('button[data-testid="userActions"][aria-label="More"][role="button"]');
+      moreButton.click();
+      console.log('Clicked More button');
+      moreButtonClicked = true;
+    }
 
     // Delay to ensure the menu has time to appear
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    console.log("Looking for 'Remove this follower' menu item");
+
 
     // Use this function to test the extension without prompting unfollows
     // const turnOnRepostsButton = await waitForMenuItem('Turn on reposts');
@@ -48,7 +95,7 @@ async function removeFollower() {
     // console.log('Clicked Turn on reposts button');
 
     // Click the "Remove this follower" button
-    const removeFollowerButton = await waitForMenuItem('Remove this follower'); // Updated text to search
+    const removeFollowerButton = await waitForMenuItem('Remove this follower', 10000); // Increased timeout
     removeFollowerButton.click();
     console.log('Clicked Remove this follower button');
 
@@ -65,13 +112,3 @@ async function removeFollower() {
     setTimeout(() => window.close(), 2000);
   }
 }
-
-// Start the process after a short delay to ensure the page has loaded
-setTimeout(removeFollower, 3000);
-
-// Listen for messages from the background script
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'removeFollower') {
-    removeFollower();
-  }
-});
